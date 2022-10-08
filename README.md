@@ -4,7 +4,7 @@ Infrastructure as code for deploying [Meilisearch](https://www.meilisearch.com/)
 ##Deploy using Deploy to Azure Button
 You can deploy Meilisearch to Azure Container Apps using the button below. Configuration is flexible yet you can update the bicep file if you need to change configuration which is not exposed as parameters
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2Ftjoudeh%2FContainer-Apps-Meilisearch%2Fblob%2F46993fb85fa54df3c59c1c4fca6b8d4db5ea9268%2Fdeploy%2Fmain.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftjoudeh%2FContainer-Apps-Meilisearch%2F46993fb85fa54df3c59c1c4fca6b8d4db5ea9268%2Fdeploy%2Fmain.json)
 
 ## Deploy using Azure CLI
 1. Ensure you have logged in to Azure CLI and you selected the right subscription.
