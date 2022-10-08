@@ -1,0 +1,785 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.10.61.36676",
+      "templateHash": "6727140583815674880"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "westus",
+      "metadata": {
+        "description": "The Azure region code for deployment resource group and resources such as westus, eastus, northeurope, etc..."
+      }
+    },
+    "applicationName": {
+      "type": "string",
+      "defaultValue": "meilisearch",
+      "metadata": {
+        "description": "The name of your search service. This value should be unique"
+      }
+    },
+    "containerResources": {
+      "type": "object",
+      "defaultValue": {
+        "cpu": "0.5",
+        "memory": "1.0Gi"
+      },
+      "allowedValues": [
+        {
+          "cpu": "0.25",
+          "memory": "0.5Gi"
+        },
+        {
+          "cpu": "0.5",
+          "memory": "1.0Gi"
+        },
+        {
+          "cpu": "0.75",
+          "memory": "1.5Gi"
+        },
+        {
+          "cpu": "1.0",
+          "memory": "2.0Gi"
+        },
+        {
+          "cpu": "1.25",
+          "memory": "2.50Gi"
+        },
+        {
+          "cpu": "1.5",
+          "memory": "3.0Gi"
+        },
+        {
+          "cpu": "1.75",
+          "memory": "3.5Gi"
+        },
+        {
+          "cpu": "2.0",
+          "memory": "4.0Gi"
+        }
+      ],
+      "metadata": {
+        "description": "The container app CPU cores and Memory"
+      }
+    },
+    "deploymentEnvironment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "metadata": {
+        "description": "The environment of deployment such as dev, test, stg, prod, etc..."
+      },
+      "maxLength": 4
+    },
+    "meilisearchMasterKey": {
+      "type": "secureString",
+      "defaultValue": "[newGuid()]",
+      "minLength": 32,
+      "metadata": {
+        "description": "The Master API Key used to connect to meilisearch instance"
+      }
+    }
+  },
+  "variables": {
+    "resourceGroupName": "[format('{0}-{1}-rg', parameters('applicationName'), parameters('deploymentEnvironment'))]",
+    "logAnalyticsWorkspaceResName": "[format('{0}-{1}-logs', parameters('applicationName'), parameters('deploymentEnvironment'))]",
+    "environmentName": "[format('{0}-{1}-env', parameters('applicationName'), parameters('deploymentEnvironment'))]",
+    "storageAccountName": "[format('{0}{1}strg', take(parameters('applicationName'), 14), parameters('deploymentEnvironment'))]",
+    "shareName": "meilisearch-fileshare",
+    "storageNameMount": "permanent-storage-mount",
+    "meilisearchImageName": "getmeili/meilisearch:v0.29",
+    "meilisearchAppPort": 7700,
+    "dbMountPath": "/data/meili",
+    "volumeName": "azure-file-volume",
+    "defaultTags": {
+      "environment": "[parameters('deploymentEnvironment')]",
+      "application": "[parameters('applicationName')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[variables('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": "[variables('defaultTags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}--storage', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[variables('storageAccountName')]"
+          },
+          "location": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
+          },
+          "applicationName": {
+            "value": "[parameters('applicationName')]"
+          },
+          "containerName": {
+            "value": "[parameters('applicationName')]"
+          },
+          "shareName": {
+            "value": "[variables('shareName')]"
+          },
+          "resourceTags": {
+            "value": "[variables('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.10.61.36676",
+              "templateHash": "15936627715968554635"
+            }
+          },
+          "parameters": {
+            "applicationName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of your application"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region where all resources in this example should be created"
+              }
+            },
+            "resourceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "A list of tags to apply to the resources"
+              }
+            },
+            "containerName": {
+              "type": "string",
+              "defaultValue": "[parameters('applicationName')]",
+              "metadata": {
+                "description": "The name of the container to create. Defaults to applicationName value."
+              }
+            },
+            "shareName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Azure file share."
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of storage account"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2021-09-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('resourceTags')]",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2"
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('containerName'))]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+              "apiVersion": "2022-05-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('shareName'))]",
+              "properties": {
+                "accessTier": "TransactionOptimized",
+                "enabledProtocols": "SMB",
+                "shareQuota": 1024
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountName": {
+              "type": "string",
+              "value": "[parameters('storageAccountName')]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "apiVersion": {
+              "type": "string",
+              "value": "2021-09-01"
+            },
+            "storageKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01').keys[0].value]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}--logAnalyticsWorkspace', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "logAnalyticsWorkspaceName": {
+            "value": "[variables('logAnalyticsWorkspaceResName')]"
+          },
+          "location": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
+          },
+          "resourceTags": {
+            "value": "[variables('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.10.61.36676",
+              "templateHash": "495129164194569447"
+            }
+          },
+          "parameters": {
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of your Log Analytics Workspace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region where all resources in this example should be created"
+              }
+            },
+            "resourceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "A list of tags to apply to the resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2021-12-01-preview",
+              "name": "[parameters('logAnalyticsWorkspaceName')]",
+              "tags": "[parameters('resourceTags')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "retentionInDays": 30,
+                "features": {
+                  "searchVersion": 1
+                },
+                "sku": {
+                  "name": "PerGB2018"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "workspaceResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
+            },
+            "logAnalyticsWorkspaceCustomerId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))).customerId]"
+            },
+            "logAnalyticsWorkspacePrimarySharedKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2021-12-01-preview').primarySharedKey]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}--acaenvironment', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "acaEnvironmentName": {
+            "value": "[variables('environmentName')]"
+          },
+          "location": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
+          },
+          "logAnalyticsWorkspaceCustomerId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))).outputs.logAnalyticsWorkspaceCustomerId.value]"
+          },
+          "logAnalyticsWorkspacePrimarySharedKey": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))).outputs.logAnalyticsWorkspacePrimarySharedKey.value]"
+          },
+          "resourceTags": {
+            "value": "[variables('defaultTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.10.61.36676",
+              "templateHash": "7940472866686772238"
+            }
+          },
+          "parameters": {
+            "acaEnvironmentName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of Azure Container Apps Environment"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region where all resources in this example should be created"
+              }
+            },
+            "resourceTags": {
+              "type": "object",
+              "metadata": {
+                "description": "A list of tags to apply to the resources"
+              }
+            },
+            "logAnalyticsWorkspaceCustomerId": {
+              "type": "string"
+            },
+            "logAnalyticsWorkspacePrimarySharedKey": {
+              "type": "secureString"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2022-03-01",
+              "name": "[parameters('acaEnvironmentName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('resourceTags')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[parameters('logAnalyticsWorkspaceCustomerId')]",
+                    "sharedKey": "[parameters('logAnalyticsWorkspacePrimarySharedKey')]"
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "acaEnvironmentId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', parameters('acaEnvironmentName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--logAnalyticsWorkspace', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}--acaenvironmentstorages', deployment().name)]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "acaEnvironmentName": {
+            "value": "[variables('environmentName')]"
+          },
+          "storageAccountResName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))).outputs.storageAccountName.value]"
+          },
+          "storageAccountResourceKey": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))).outputs.storageKey.value]"
+          },
+          "storageNameMount": {
+            "value": "[variables('storageNameMount')]"
+          },
+          "shareName": {
+            "value": "[variables('shareName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.10.61.36676",
+              "templateHash": "11800992946239062234"
+            }
+          },
+          "parameters": {
+            "acaEnvironmentName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of Azure Container Apps Environment"
+              }
+            },
+            "storageAccountResName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of your storage account"
+              }
+            },
+            "storageAccountResourceKey": {
+              "type": "secureString",
+              "metadata": {
+                "description": "The storage account key"
+              }
+            },
+            "storageNameMount": {
+              "type": "string",
+              "metadata": {
+                "description": "The ACA env storage name moun"
+              }
+            },
+            "shareName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Azure file share. Defaults to applicationName value."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/managedEnvironments/storages",
+              "apiVersion": "2022-03-01",
+              "name": "[format('{0}/{1}', parameters('acaEnvironmentName'), parameters('storageNameMount'))]",
+              "properties": {
+                "azureFile": {
+                  "accountName": "[parameters('storageAccountResName')]",
+                  "accountKey": "[parameters('storageAccountResourceKey')]",
+                  "shareName": "[parameters('shareName')]",
+                  "accessMode": "ReadWrite"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--storage', deployment().name))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}--{1}', deployment().name, parameters('applicationName'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "containerAppName": {
+            "value": "[parameters('applicationName')]"
+          },
+          "location": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')), '2021-04-01', 'full').location]"
+          },
+          "environmentId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))).outputs.acaEnvironmentId.value]"
+          },
+          "containerImage": {
+            "value": "[variables('meilisearchImageName')]"
+          },
+          "targetPort": {
+            "value": "[variables('meilisearchAppPort')]"
+          },
+          "isPrivateRegistry": {
+            "value": false
+          },
+          "containerRegistry": {
+            "value": ""
+          },
+          "containerRegistryUsername": {
+            "value": ""
+          },
+          "registryPassName": {
+            "value": ""
+          },
+          "minReplicas": {
+            "value": 1
+          },
+          "maxReplicas": {
+            "value": 1
+          },
+          "revisionMode": {
+            "value": "Single"
+          },
+          "storageNameMount": {
+            "value": "[variables('storageNameMount')]"
+          },
+          "mountPath": {
+            "value": "[variables('dbMountPath')]"
+          },
+          "volumeName": {
+            "value": "[variables('volumeName')]"
+          },
+          "resourceTags": {
+            "value": "[variables('defaultTags')]"
+          },
+          "resourceAllocationCPU": {
+            "value": "[parameters('containerResources').cpu]"
+          },
+          "resourceAllocationMemory": {
+            "value": "[parameters('containerResources').memory]"
+          },
+          "secListObj": {
+            "value": {
+              "secArray": [
+                {
+                  "name": "meili-master-key-value",
+                  "value": "[parameters('meilisearchMasterKey')]"
+                }
+              ]
+            }
+          },
+          "envList": {
+            "value": [
+              {
+                "name": "MEILI_MASTER_KEY",
+                "secretRef": "meili-master-key-value"
+              },
+              {
+                "name": "MEILI_DB_PATH",
+                "value": "[variables('dbMountPath')]"
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.10.61.36676",
+              "templateHash": "1992404593611161520"
+            }
+          },
+          "parameters": {
+            "containerAppName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "environmentId": {
+              "type": "string"
+            },
+            "containerImage": {
+              "type": "string"
+            },
+            "targetPort": {
+              "type": "int"
+            },
+            "containerRegistry": {
+              "type": "string"
+            },
+            "containerRegistryUsername": {
+              "type": "string"
+            },
+            "isPrivateRegistry": {
+              "type": "bool"
+            },
+            "registryPassName": {
+              "type": "string"
+            },
+            "minReplicas": {
+              "type": "int",
+              "defaultValue": 0
+            },
+            "maxReplicas": {
+              "type": "int",
+              "defaultValue": 1
+            },
+            "secListObj": {
+              "type": "secureObject"
+            },
+            "envList": {
+              "type": "array",
+              "defaultValue": []
+            },
+            "revisionMode": {
+              "type": "string",
+              "defaultValue": "Single"
+            },
+            "storageNameMount": {
+              "type": "string"
+            },
+            "volumeName": {
+              "type": "string"
+            },
+            "mountPath": {
+              "type": "string"
+            },
+            "resourceTags": {
+              "type": "object"
+            },
+            "resourceAllocationCPU": {
+              "type": "string"
+            },
+            "resourceAllocationMemory": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2022-06-01-preview",
+              "name": "[parameters('containerAppName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('resourceTags')]",
+              "properties": {
+                "managedEnvironmentId": "[parameters('environmentId')]",
+                "configuration": {
+                  "activeRevisionsMode": "[parameters('revisionMode')]",
+                  "secrets": "[parameters('secListObj').secArray]",
+                  "registries": "[if(parameters('isPrivateRegistry'), createArray(createObject('server', parameters('containerRegistry'), 'username', parameters('containerRegistryUsername'), 'passwordSecretRef', parameters('registryPassName'))), null())]",
+                  "ingress": {
+                    "external": true,
+                    "targetPort": "[parameters('targetPort')]",
+                    "transport": "auto",
+                    "traffic": [
+                      {
+                        "latestRevision": true,
+                        "weight": 100
+                      }
+                    ]
+                  },
+                  "dapr": null
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "image": "[parameters('containerImage')]",
+                      "name": "[parameters('containerAppName')]",
+                      "env": "[parameters('envList')]",
+                      "volumeMounts": [
+                        {
+                          "mountPath": "[parameters('mountPath')]",
+                          "volumeName": "[parameters('volumeName')]"
+                        }
+                      ],
+                      "resources": {
+                        "cpu": "[json(parameters('resourceAllocationCPU'))]",
+                        "memory": "[parameters('resourceAllocationMemory')]"
+                      }
+                    }
+                  ],
+                  "volumes": [
+                    {
+                      "name": "[parameters('volumeName')]",
+                      "storageName": "[parameters('storageNameMount')]",
+                      "storageType": "AzureFile"
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]"
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "fqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).configuration.ingress.fqdn]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--acaenvironment', deployment().name))]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('{0}--{1}', deployment().name, parameters('applicationName')))).outputs.fqdn.value]"
+    }
+  }
+}
