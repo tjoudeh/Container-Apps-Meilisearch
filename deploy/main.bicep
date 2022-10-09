@@ -1,17 +1,15 @@
 targetScope = 'subscription'
 
+//Azure Regions which Azure Container Apps available at can be found on this link:
+//https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=container-apps&regions=all
 @description('The Azure region code for deployment resource group and resources such as westus, eastus, northeurope, etc...')
 param location string = 'westus'
 
 @description('The name of your search service. This value should be unique')
 param applicationName string = 'meilisearch'
 
-@description('The container app CPU cores and Memory')
+@description('The Container App CPU cores and Memory')
 @allowed([
-  {
-    cpu: '0.25'
-    memory: '0.5Gi'
-  }
   {
     cpu: '0.5'
     memory: '1.0Gi'
@@ -42,8 +40,8 @@ param applicationName string = 'meilisearch'
   }
 ])
 param containerResources object = {
-  cpu: '0.5'
-  memory: '1.0Gi'
+  cpu: '1.0'
+  memory: '2.0Gi'
 }
 
 @maxLength(4)
@@ -51,7 +49,7 @@ param containerResources object = {
 param deploymentEnvironment string = 'dev'
 
 @secure()
-@description('The Master API Key used to connect to meilisearch instance')
+@description('The Master API Key used to connect to Meilisearch instance')
 @minLength(32)
 param meilisearchMasterKey string = newGuid()
 
@@ -142,10 +140,6 @@ module containerApp 'modules/containerApp.bicep' = {
     environmentId: environment.outputs.acaEnvironmentId
     containerImage: meilisearchImageName
     targetPort: meilisearchAppPort
-    isPrivateRegistry: false
-    containerRegistry: ''
-    containerRegistryUsername: ''
-    registryPassName: ''
     minReplicas: 1
     maxReplicas: 1
     revisionMode: 'Single'

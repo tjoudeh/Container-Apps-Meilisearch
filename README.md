@@ -1,5 +1,5 @@
 # Deploy Meilisearch on Azure Container Apps
-Infrastructure as code for deploying [Meilisearch](https://www.meilisearch.com/) on Azure Container Apps and host DB files on Azure Storage Files
+Companion [blog post](https://bit.ly/3TavzGb) to go over the creation of this Infrastructure as Code for deploying [Meilisearch](https://www.meilisearch.com/) on Azure Container Apps and host DB files on Azure Storage Files.
 
 ## Deploy using 'Deploy to Azure Button'
 You can deploy Meilisearch to Azure Container Apps using the button below. Configuration is flexible, yet you can update the bicep file if you need to change configuration which is not exposed as parameters.
@@ -7,12 +7,13 @@ You can deploy Meilisearch to Azure Container Apps using the button below. Confi
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftjoudeh%2FContainer-Apps-Meilisearch%2F46993fb85fa54df3c59c1c4fca6b8d4db5ea9268%2Fdeploy%2Fmain.json)
 
 As per the image below, you can provide the below configuration:
+
 - Region (Region for the resource group created).
-- Location (Region for resources under the resource group, please use the same value as the **Region**).
-- Application Name (Container App Name, used to set resource group name, storage, container app environment, and log analytics workspace).
-- Container Resources (Container App CPU and Memory. Read [here](https://learn.microsoft.com/en-us/azure/container-apps/containers#configuration) to understand more about those CPU/Memory combinations).
-- Deployment Environment (Used to identify deployment environment).
-- Master Key (Master key stored in container app environment variable to protect your Meilisearch. 32 characters or more).
+- Location: The Azure region code ("westus", "northeurope", "australiacentral", etc...). This should be a region where Azure container Apps and Azure Storage is available, you can check where Azure Container Apps are available on this [link.](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=storage,container-apps&regions=all). please use the same value as the **Region**
+- Application Name: the name of the Meilisearch search service, this name will be part of the FQDN and will be used to set resource group name, storage, container app environment, and log analytics workspace.
+- Container Resources: Container App CPU and Memory. Read [here](https://learn.microsoft.com/en-us/azure/container-apps/containers#configuration) to understand more about those CPU/Memory combinations. The limits are soft limits and you can request to increase the quota by submitting a [support request.](https://azure.microsoft.com/support/create-ticket/)
+- Deployment Environment: Used to identify deployment resources ("dev", "stg", "prod", etc...) and tag them with the selected environment, this has nothing to do with the capacity or performance of the resources provisioned. This will be useful if you are deploying multiple  Meilisearch instances under the same subscription for dev/test scenarios.
+- Meilisearch Master Key: This is the Master API Key used with the Meilisearch instance, minimum length is 32 characters. The recommendation is to generate a strong key, if not provided deployment template will generate a guide as the Master API key.
 
 ![image](https://user-images.githubusercontent.com/3114431/194722145-090b113e-9a6d-4f50-ae07-c87ab8298009.png)
 

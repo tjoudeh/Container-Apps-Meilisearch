@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.10.61.36676",
-      "templateHash": "6727140583815674880"
+      "templateHash": "8113224749618155577"
     }
   },
   "parameters": {
@@ -26,14 +26,10 @@
     "containerResources": {
       "type": "object",
       "defaultValue": {
-        "cpu": "0.5",
-        "memory": "1.0Gi"
+        "cpu": "1.0",
+        "memory": "2.0Gi"
       },
       "allowedValues": [
-        {
-          "cpu": "0.25",
-          "memory": "0.5Gi"
-        },
         {
           "cpu": "0.5",
           "memory": "1.0Gi"
@@ -64,7 +60,7 @@
         }
       ],
       "metadata": {
-        "description": "The container app CPU cores and Memory"
+        "description": "The Container App CPU cores and Memory"
       }
     },
     "deploymentEnvironment": {
@@ -80,7 +76,7 @@
       "defaultValue": "[newGuid()]",
       "minLength": 32,
       "metadata": {
-        "description": "The Master API Key used to connect to meilisearch instance"
+        "description": "The Master API Key used to connect to Meilisearch instance"
       }
     }
   },
@@ -481,7 +477,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.10.61.36676",
-              "templateHash": "11800992946239062234"
+              "templateHash": "10608691584742922051"
             }
           },
           "parameters": {
@@ -506,7 +502,7 @@
             "storageNameMount": {
               "type": "string",
               "metadata": {
-                "description": "The ACA env storage name moun"
+                "description": "The ACA env storage name mount"
               }
             },
             "shareName": {
@@ -565,18 +561,6 @@
           "targetPort": {
             "value": "[variables('meilisearchAppPort')]"
           },
-          "isPrivateRegistry": {
-            "value": false
-          },
-          "containerRegistry": {
-            "value": ""
-          },
-          "containerRegistryUsername": {
-            "value": ""
-          },
-          "registryPassName": {
-            "value": ""
-          },
           "minReplicas": {
             "value": 1
           },
@@ -634,7 +618,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.10.61.36676",
-              "templateHash": "1992404593611161520"
+              "templateHash": "3962669354188616313"
             }
           },
           "parameters": {
@@ -652,18 +636,6 @@
             },
             "targetPort": {
               "type": "int"
-            },
-            "containerRegistry": {
-              "type": "string"
-            },
-            "containerRegistryUsername": {
-              "type": "string"
-            },
-            "isPrivateRegistry": {
-              "type": "bool"
-            },
-            "registryPassName": {
-              "type": "string"
             },
             "minReplicas": {
               "type": "int",
@@ -715,7 +687,6 @@
                 "configuration": {
                   "activeRevisionsMode": "[parameters('revisionMode')]",
                   "secrets": "[parameters('secListObj').secArray]",
-                  "registries": "[if(parameters('isPrivateRegistry'), createArray(createObject('server', parameters('containerRegistry'), 'username', parameters('containerRegistryUsername'), 'passwordSecretRef', parameters('registryPassName'))), null())]",
                   "ingress": {
                     "external": true,
                     "targetPort": "[parameters('targetPort')]",
@@ -726,8 +697,7 @@
                         "weight": 100
                       }
                     ]
-                  },
-                  "dapr": null
+                  }
                 },
                 "template": {
                   "containers": [

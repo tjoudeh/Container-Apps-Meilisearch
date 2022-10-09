@@ -3,10 +3,6 @@ param location string
 param environmentId string 
 param containerImage string
 param targetPort int
-param containerRegistry string
-param containerRegistryUsername string
-param isPrivateRegistry bool
-param registryPassName string
 param minReplicas int = 0
 param maxReplicas int = 1
 @secure()
@@ -19,7 +15,6 @@ param mountPath string
 param resourceTags object
 param resourceAllocationCPU string
 param resourceAllocationMemory string
-//param containerResources object
 
 resource containerApp 'Microsoft.App/containerApps@2022-06-01-preview' = {
   name: containerAppName
@@ -30,13 +25,6 @@ resource containerApp 'Microsoft.App/containerApps@2022-06-01-preview' = {
     configuration: {
       activeRevisionsMode: revisionMode
       secrets: secListObj.secArray
-      registries: isPrivateRegistry ? [
-        {
-          server: containerRegistry
-          username: containerRegistryUsername
-          passwordSecretRef: registryPassName
-        }
-      ] : null
       ingress: {
         external: true
         targetPort: targetPort
@@ -48,7 +36,6 @@ resource containerApp 'Microsoft.App/containerApps@2022-06-01-preview' = {
           }
         ]
       } 
-      dapr: null
     }
     template: {
       containers: [

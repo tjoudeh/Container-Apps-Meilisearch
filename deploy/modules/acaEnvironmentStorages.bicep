@@ -9,7 +9,7 @@ param storageAccountResName string
 @secure()
 param storageAccountResourceKey string 
 
-@description('The ACA env storage name moun')
+@description('The ACA env storage name mount')
 param storageNameMount string
 
 @description('The name of the Azure file share. Defaults to applicationName value.')
