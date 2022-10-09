@@ -2,8 +2,8 @@ targetScope = 'subscription'
 
 //Azure Regions which Azure Container Apps available at can be found on this link:
 //https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=container-apps&regions=all
-@description('The Azure region code for deployment resource group and resources such as westus, eastus, northeurope, etc...')
-param location string = 'westus'
+@description('The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc...')
+param location string = 'northcentralus'
 
 @description('The name of your search service. This value should be unique')
 param applicationName string = 'meilisearch'

@@ -5,15 +5,15 @@
     "_generator": {
       "name": "bicep",
       "version": "0.10.61.36676",
-      "templateHash": "8113224749618155577"
+      "templateHash": "2985394370871187515"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "westus",
+      "defaultValue": "northcentralus",
       "metadata": {
-        "description": "The Azure region code for deployment resource group and resources such as westus, eastus, northeurope, etc..."
+        "description": "The Azure region code for deployment resource group and resources such as westus, eastus, northcentralus, northeurope, etc..."
       }
     },
     "applicationName": {
